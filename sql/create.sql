@@ -10,6 +10,8 @@ CREATE SEQUENCE languages_seq;
 CREATE TABLE languages (
     lg_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('languages_seq'),
     lg_code CHAR(2) NOT NULL UNIQUE,
+    lg_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    lg_ordering INTEGER NOT NULL DEFAULT 0,
     lg_name VARCHAR (20) UNIQUE
 );
 CREATE SEQUENCE labels_seq;
@@ -33,7 +35,8 @@ CREATE SEQUENCE roles_seq;
 CREATE TABLE roles (
     ro_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('roles_seq'),
     ro_name VARCHAR(20) NOT NULL UNIQUE,
-    ro_description VARCHAR(60) NOT NULL
+    ro_description VARCHAR(60) NOT NULL,
+    ro_ordering INTEGER NOT NULL DEFAULT 0
 );
 -- users
 CREATE SEQUENCE users_seq;
@@ -57,10 +60,11 @@ CREATE TABLE user_roles (
     CONSTRAINT fk_role FOREIGN KEY(ur_role_id) REFERENCES roles(ro_id),
     UNIQUE (ur_user_id, ur_role_id)
 );
--- items
-CREATE SEQUENCE items_seq;
-CREATE TABLE items (
-    it_id INTEGER PRIMARY KEY DEFAULT NEXTVAL('items_seq'),
+-- products
+CREATE SEQUENCE products_seq;
+CREATE TABLE products (
+    it_id INTEGER PRIMARY KEY DEFAULT NEXTVAL('products_seq'),
+    it_category_id INTEGER NOT NULL,
     it_parent INTEGER NULL,
     it_abstract BOOLEAN NOT NULL DEFAULT FALSE,
     it_customisation BOOLEAN NOT NULL DEFAULT FALSE,
@@ -71,7 +75,8 @@ CREATE TABLE items (
     it_weight FLOAT NOT NULL DEFAULT 0,
     it_in_stock INTEGER NOT NULL DEFAULT 0,
     it_on_backorder INTEGER NOT NULL DEFAULT 0,
-    it_can_backorder BOOLEAN NOT NULL DEFAULT FALSE
+    it_can_backorder BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT fk_category FOREIGN KEY(it_category_id) REFERENCES categories(ca_id),
 );
 -- images
 CREATE TYPE MIMETYPE AS ENUM ('jpg', 'png', 'gif', 'mp4');
@@ -99,21 +104,22 @@ CREATE SEQUENCE batches_seq;
 CREATE TABLE batches (
     ba_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('batches_seq'),
     ba_user_id INTEGER NOT NULL,
-    ba_item_id INTEGER NOT NULL,
+    ba_product_id INTEGER NOT NULL,
     ba_initial_size INTEGER NOT NULL DEFAULT 0,
-    ba_finished_items INTEGER NOT NULL DEFAULT 0,
-    ba_rejected_items INTEGER NOT NULL DEFAULT 0,
+    ba_finished_products INTEGER NOT NULL DEFAULT 0,
+    ba_rejected_products INTEGER NOT NULL DEFAULT 0,
     ba_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user FOREIGN KEY(ba_user_id) REFERENCES users(us_id),
-    CONSTRAINT fk_item FOREIGN KEY(ba_item_id) REFERENCES items(it_id),
-    UNIQUE (ba_user_id, ba_item_id)
+    CONSTRAINT fk_product FOREIGN KEY(ba_product_id) REFERENCES products(it_id),
+    UNIQUE (ba_user_id, ba_product_id)
 );
 -- categories
 CREATE TYPE CATEGORY_STATUS AS ENUM ('good', 'bad');
 CREATE SEQUENCE categories_seq;
 CREATE TABLE categories (
     ca_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('categories_seq'),
-    ca_parent INTEGER NULL,
+    ca_parent_id INTEGER NULL,
+    ca_ordering INTEGER NOT NULL DEFAULT 0,
     ca_title VARCHAR(20) NOT NULL,
     ca_blurb VARCHAR(20) NULL,
     ca_description VARCHAR(4000) NULL,
@@ -133,28 +139,28 @@ CREATE TABLE category_images (
     CONSTRAINT fk_image FOREIGN KEY(ci_image_id) REFERENCES images(im_id),
     UNIQUE (ci_category_id, ci_image_id)
 );
--- item_images
-CREATE SEQUENCE item_images_seq;
-CREATE TABLE item_images (
-    ii_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('item_images_seq'),
-    ii_item_id INTEGER NOT NULL,
+-- product_images
+CREATE SEQUENCE product_images_seq;
+CREATE TABLE product_images (
+    ii_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('product_images_seq'),
+    ii_product_id INTEGER NOT NULL,
     ii_image_id INTEGER NOT NULL,
     ii_ordering INTEGER NOT NULL DEFAULT 0,
-    CONSTRAINT fk_item FOREIGN KEY(ii_item_id) REFERENCES items(it_id),
+    CONSTRAINT fk_product FOREIGN KEY(ii_product_id) REFERENCES products(it_id),
     CONSTRAINT fk_image FOREIGN KEY(ii_image_id) REFERENCES images(im_id),
-    UNIQUE (ii_item_id, ii_image_id)
+    UNIQUE (ii_product_id, ii_image_id)
 );
--- item_parts
-CREATE SEQUENCE item_parts_seq;
-CREATE TABLE item_parts (
-    ip_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('item_parts_seq'),
-    ip_item_id INTEGER NOT NULL,
+-- product_parts
+CREATE SEQUENCE product_parts_seq;
+CREATE TABLE product_parts (
+    ip_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('product_parts_seq'),
+    ip_product_id INTEGER NOT NULL,
     ip_part_id INTEGER NOT NULL,
     ip_quantity INTEGER NOT NULL DEFAULT 0,
     ip_ordering INTEGER NOT NULL DEFAULT 0,
-    CONSTRAINT fk_item FOREIGN KEY(ip_item_id) REFERENCES items(it_id),
+    CONSTRAINT fk_product FOREIGN KEY(ip_product_id) REFERENCES products(it_id),
     CONSTRAINT fk_part FOREIGN KEY(ip_part_id) REFERENCES parts(pa_id),
-    UNIQUE (ip_item_id, ip_part_id)
+    UNIQUE (ip_product_id, ip_part_id)
 );
 -- part_images
 CREATE SEQUENCE part_images_seq;
@@ -214,17 +220,17 @@ CREATE TABLE orders (
     CONSTRAINT fk_shipping FOREIGN KEY(or_shipping_address) REFERENCES addresses(ad_id),
     CONSTRAINT fk_billing FOREIGN KEY(or_billing_address) REFERENCES addresses(ad_id)
 );
--- order_items
-CREATE TYPE ORDER_ITEM_STATUS AS ENUM('good', 'bad');
-CREATE SEQUENCE order_items_seq;
-CREATE TABLE order_items (
-    oi_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('order_items_seq'),
+-- order_products
+CREATE TYPE ORDER_PRODUCT_STATUS AS ENUM('good', 'bad');
+CREATE SEQUENCE order_products_seq;
+CREATE TABLE order_products (
+    oi_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('order_products_seq'),
     oi_order_id INTEGER NOT NULL,
-    oi_item_id INTEGER NOT NULL,
+    oi_product_id INTEGER NOT NULL,
     oi_quantity INTEGER NOT NULL DEFAULT 0,
     oi_ordering INTEGER NOT NULL DEFAULT 0,
-    oi_status ORDER_ITEM_STATUS NOT NULL DEFAULT 'good',
+    oi_status ORDER_PRODUCT_STATUS NOT NULL DEFAULT 'good',
     CONSTRAINT fk_order FOREIGN KEY(oi_order_id) REFERENCES orders(or_id),
-    CONSTRAINT fk_item FOREIGN KEY(oi_item_id) REFERENCES items(it_id),
-    UNIQUE (oi_order_id, oi_item_id)
+    CONSTRAINT fk_product FOREIGN KEY(oi_product_id) REFERENCES products(it_id),
+    UNIQUE (oi_order_id, oi_product_id)
 );
