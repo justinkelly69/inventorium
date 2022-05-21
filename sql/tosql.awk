@@ -1,0 +1,1 @@
+#!/usr/bin/env awk -F: { print "(\x27" tolower($2) "\x27,\x27" $1"\x27,\x27" $3"\x27)," }

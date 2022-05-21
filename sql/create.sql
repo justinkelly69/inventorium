@@ -2,6 +2,7 @@
 CREATE SEQUENCE countries_seq;
 CREATE TABLE countries (
     co_id INTEGER NOT NULL PRIMARY KEY DEFAULT NEXTVAL('countries_seq'),
+    co_flag CHAR(1) NOT NULL,
     co_code CHAR(2) NOT NULL,
     co_name VARCHAR (100)
 );
