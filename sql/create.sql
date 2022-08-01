@@ -107,6 +107,7 @@ CREATE TABLE category_images (
 CREATE TABLE products (
     it_id SERIAL PRIMARY KEY,
     it_category_id INTEGER NOT NULL,
+    it_ordering INTEGER NOT NULL DEFAULT 0,
     it_parent INTEGER NULL,
     it_abstract BOOLEAN NOT NULL DEFAULT FALSE,
     it_customisation BOOLEAN NOT NULL DEFAULT FALSE,
@@ -133,6 +134,7 @@ CREATE TABLE product_images (
 -- parts
 CREATE TABLE parts (
     pa_id SERIAL PRIMARY KEY,
+    pi_ordering INTEGER NOT NULL DEFAULT 0,
     pa_title VARCHAR(20) NOT NULL,
     pa_blurb VARCHAR(100) NULL,
     pa_description VARCHAR(4000) NULL,
@@ -169,6 +171,7 @@ CREATE TABLE batches (
     ba_initial_size INTEGER NOT NULL DEFAULT 0,
     ba_finished_products INTEGER NOT NULL DEFAULT 0,
     ba_rejected_products INTEGER NOT NULL DEFAULT 0,
+    ba_ordering INTEGER NOT NULL DEFAULT 0,
     ba_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user FOREIGN KEY(ba_user_id) REFERENCES users(us_id),
     CONSTRAINT fk_product FOREIGN KEY(ba_product_id) REFERENCES products(it_id),

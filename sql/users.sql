@@ -1,28 +1,64 @@
--- roles
-CREATE TABLE roles (
-    ro_id SERIAL PRIMARY KEY,
-    ro_name VARCHAR(20) NOT NULL UNIQUE,
-    ro_description VARCHAR(60) NOT NULL,
-    ro_ordering INTEGER NOT NULL DEFAULT 0
+-- insert-roles -- ro_id
+INSERT INTO roles (ro_name, ro_description,)
+VALUES ('$ro_name', '$ro_description');
+
+-- delete-roles
+DELETE FROM roles
+WHERE NOT EXISTS (
+    SELECT *
+    FROM user_roles
+    WHERE ur_role_id = '$ro_id'
+)
+AND ro_id = '$ro_id';
+
+-- insert-user -- us_id
+INSERT INTO users (
+    us_email,
+    us_password,
+    us_salt,
+    us_enabled
+)
+VALUES (
+    '$us_email',
+    '$us_password',
+    '$us_salt',
+    FALSE
 );
--- users
-CREATE TABLE users (
-    us_id SERIAL PRIMARY KEY,
-    us_email VARCHAR(60) NOT NULL UNIQUE,
-    us_password VARCHAR(60) NOT NULL,
-    us_salt VARCHAR(60) NOT NULL,
-    us_username VARCHAR(20) NOT NULL,
-    us_firstname VARCHAR(20) NOT NULL,
-    us_middlename VARCHAR(20) NULL,
-    us_lastname VARCHAR(20) NOT NULL,
-    us_enabled BOOLEAN DEFAULT FALSE
-);
--- user_roles
-CREATE TABLE user_roles (
-    ur_id SERIAL PRIMARY KEY,
-    ur_user_id INTEGER NOT NULL,
-    ur_role_id INTEGER NOT NULL,
-    CONSTRAINT fk_user FOREIGN KEY(ur_user_id) REFERENCES users(us_id),
-    CONSTRAINT fk_role FOREIGN KEY(ur_role_id) REFERENCES roles(ro_id),
-    UNIQUE (ur_user_id, ur_role_id)
-);
+
+-- update-user -- us_id
+UPDATE USER SET
+    us_username   = '$us_username',
+    us_firstname  = '$us_firstname',
+    us_middlename = '$us_middlename',
+    us_lastname   = '$us_lastname'
+WHERE us_id = '$us_id';
+
+-- reset-user-password
+UPDATE USER SET
+    us_password = '$new_password',
+    us_salt     = '$us_salt',
+WHERE us_id     = '$us_id'
+AND us_password = '$old_password';
+
+-- enable user
+UPDATE USER SET
+    us_enabled = '$us_enabled',
+WHERE us_id = '$us_id';
+
+-- delete user
+DELETE FROM users
+WHERE NOT EXISTS (
+    SELECT * FROM user_roles
+    WHERE ur_id = '$us_id'
+)
+AND us_enabled = FALSE
+AND us_id = '$us_id';
+
+-- insert user_roles -- ur_id
+INSERT INTO user_roles (ur_user_id, ur_role_id)
+VALUES ('$ur_user_id', '$ur_role_id') 
+ON CONFLICT DO NOTHING;
+
+-- delete user_roles
+DELETE FROM user_roles
+WHERE ur_id = '$ur_id';
