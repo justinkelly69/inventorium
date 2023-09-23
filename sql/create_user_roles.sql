@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS temp_user_roles;
 DROP TABLE IF EXISTS temp_users;
 DROP TYPE IF EXISTS TEMP_USER_STATUS;
@@ -5,7 +6,6 @@ DROP TABLE IF EXISTS user_roles;
 DROP TABLE IF EXISTS users;
 DROP TYPE IF EXISTS USER_STATUS;
 DROP TABLE IF EXISTS roles;
-
 -- roles
 CREATE TABLE roles (
     ro_id SERIAL PRIMARY KEY,
@@ -14,7 +14,6 @@ CREATE TABLE roles (
     ro_name VARCHAR(20) NOT NULL UNIQUE,
     ro_description VARCHAR(60) NOT NULL
 );
-
 -- users
 CREATE TYPE USER_STATUS AS ENUM ('enabled', 'disabled');
 CREATE TABLE users (
@@ -44,7 +43,6 @@ CREATE TABLE user_roles (
     CONSTRAINT fk_role FOREIGN KEY(ur_role_id) REFERENCES roles(ro_id),
     UNIQUE (ur_user_id, ur_role_id)
 );
-
 -- temp_users
 CREATE TYPE TEMP_USER_STATUS AS ENUM ('waiting', 'denied', 'need_info');
 CREATE TABLE temp_users (
@@ -63,7 +61,6 @@ CREATE TABLE temp_users (
     tu_lastname VARCHAR(20) NOT NULL,
     tu_mobile_phone VARCHAR(20) NOT NULL
 );
-
 -- temp_user_roles
 CREATE TABLE temp_user_roles (
     tr_id SERIAL PRIMARY KEY,
@@ -75,11 +72,22 @@ CREATE TABLE temp_user_roles (
     CONSTRAINT fk_role FOREIGN KEY(tr_role_id) REFERENCES roles(ro_id),
     UNIQUE (tr_temp_user_id, tr_role_id)
 );
-
+CREATE TABLE sessions (
+    se_id SERIAL PRIMARY KEY,
+    se_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    se_cookie VARCHAR(200),
+    se_hash TEXT,
+    se_live BOOLEAN DEFAULT true,
+    se_us_id INTEGER NOT NULL,
+    se_ip VARCHAR(32),
+    se_browser TEXT,
+    se_hostname VARCHAR(200),
+    se_login_attempts INTEGER DEFAULT 0,
+    CONSTRAINT fk_user FOREIGN KEY(se_us_id) REFERENCES users(us_id)
+);
 -- roles ro
 -- users us
 -- user_roles ur
 -- temp_users tu
 -- temp_user_roles tr
-
-
+-- sessions se
