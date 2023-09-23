@@ -1,3 +1,11 @@
+DROP TABLE IF EXISTS temp_user_roles;
+DROP TABLE IF EXISTS temp_users;
+DROP TYPE IF EXISTS TEMP_USER_STATUS;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS USER_STATUS;
+DROP TABLE IF EXISTS roles;
+
 -- roles
 CREATE TABLE roles (
     ro_id SERIAL PRIMARY KEY,
@@ -67,3 +75,11 @@ CREATE TABLE temp_user_roles (
     CONSTRAINT fk_role FOREIGN KEY(tr_role_id) REFERENCES roles(ro_id),
     UNIQUE (tr_temp_user_id, tr_role_id)
 );
+
+-- roles ro
+-- users us
+-- user_roles ur
+-- temp_users tu
+-- temp_user_roles tr
+
+
