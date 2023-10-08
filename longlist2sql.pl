@@ -16,7 +16,7 @@ my @keys = keys(%longlist);
 
 my $countriesOut = printOpen (
     './out/countries.sql',
-    "INSERT INTO countries (id, common, official, flag)\nVALUES\n"
+    "INSERT INTO countries (id, common, official, flag, tld, callingCode, euMember)\nVALUES\n"
 );
 
 my $countryLanguagesOut = printOpen (
@@ -44,8 +44,27 @@ for $key (sort @keys) {
     my $officialName = quote($longlist{$key}->{name}->{official});
     my $flag         = $longlist{$key}->{extra}->{emoji};
     my $tld          = $longlist{$key}->{tld};
-    print("@$tld\n");
+    my $tldStr       = '';
+    my $callingCode  = $longlist{$key}->{dialling}->{calling_code};
+    my $callStr      = '';
+    my $euMember     = $longlist{$key}->{extra}->{eu_member};
 
+    if($euMember) {
+        $euMember = 'true';
+    }
+    else {
+        $euMember = 'false';
+    }
+
+    if(ref $tld eq ref []) {
+        #$tldStr = join(",", @$tld);
+        $tldStr = substr $$tld[0], 1;
+    }
+
+    if(ref $callingCode eq ref []) {
+        $callStr = join(',', @$callingCode);
+    }
+    
     %languages = printJoinTable (
         $longlist{$key}->{languages}, 
         $countryLanguagesOut,
@@ -77,7 +96,7 @@ for $key (sort @keys) {
         print $countriesOut ",\n";
     }
     $start = 1;
-    print $countriesOut "('$key', '$commonName', '$officialName', '$flag')";
+    print $countriesOut "('$key', '$commonName', '$officialName', '$flag', '$tldStr', '$callStr', $euMember)";
 }
 
 printClose($countriesOut);
