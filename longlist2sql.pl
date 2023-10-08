@@ -1,35 +1,52 @@
 #!/usr/bin/env perl
 
 use JSON;
+use FileHandle;
 use Data::Dumper;
 
-open($list, '<', './longlist.json');
+unlink glob "out/*.*";
 
-my $i = 0;
+open($list, '<', './longlist.json');
 my @item  = <$list>;
+close($list);
 
 my $json = JSON->new->allow_nonref;
 my %longlist = %{$json->decode(join("", "@item"))};
 my @keys = keys(%longlist);
 
+my $countriesOut = printOpen (
+    './out/countries.sql',
+    "INSERT INTO countries (id, common, official, flag)\nVALUES\n"
+);
+
+my $countryLanguagesOut = printOpen (
+    './out/countrylanguages.sql',
+    "INSERT INTO country_languages (country, language)\nVALUES\n"
+);
+
+my $countryCurrenciesOut = printOpen (
+    './out/countrycurrencies.sql',
+    "INSERT INTO country_currencies (id, name)\nVALUES\n"
+);
+
+my $countryContinentsOut = printOpen (
+    './out/countrycontinents.sql',
+    "INSERT INTO country_continents (id, name)\nVALUES\n"
+);
+
 my %languages;
 my %currencies;
-
-open($countriesOut,         '>', './out/countries.sql');
-open($countryLanguagesOut,  '>', './out/countrylanguages.sql');
-open($countryCurrenciesOut, '>', './out/countrycurrencies.sql');
-
-print $countriesOut         "INSERT INTO countries (id, common, official, flag)\nVALUES\n";
-print $countryLanguagesOut  "INSERT INTO country_languages (country, language)\nVALUES\n";
-print $countryCurrenciesOut "INSERT INTO country_currencies (id, name)\nVALUES\n";
+my %continents;
 
 my $start = 0;
 for $key (sort @keys) {
     my $commonName   = quote($longlist{$key}->{name}->{common});
     my $officialName = quote($longlist{$key}->{name}->{official});
     my $flag         = $longlist{$key}->{extra}->{emoji};
+    my $tld          = $longlist{$key}->{tld};
+    print("@$tld\n");
 
-    %languages = printHash (
+    %languages = printJoinTable (
         $longlist{$key}->{languages}, 
         $countryLanguagesOut,
         $start,
@@ -38,7 +55,7 @@ for $key (sort @keys) {
         sub {my ($key, $hash) = @_; $$hash{$key};}
     );
 
-    %currencies = printHash (
+    %currencies = printJoinTable (
         $longlist{$key}->{currency},
         $countryCurrenciesOut,
         $start,
@@ -47,16 +64,26 @@ for $key (sort @keys) {
         sub {my ($key, $hash) = @_; $$hash{$key}->{iso_4217_name};}
     );
 
+    %continents = printJoinTable (
+        $longlist{$key}->{geo}->{continent}, 
+        $countryContinentsOut,
+        $start,
+        $key,
+        \%continents,
+        sub {my ($key, $hash) = @_; $$hash{$key};}
+    );
+
     if($start > 0){
         print $countriesOut ",\n";
     }
     $start = 1;
     print $countriesOut "('$key', '$commonName', '$officialName', '$flag')";
 }
-print $countriesOut ";\n";
-print $countryLanguagesOut ";\n";
-print $countryCurrenciesOut ";\n";
 
+printClose($countriesOut);
+printClose($countryLanguagesOut);
+printClose($countryCurrenciesOut);
+printClose($countryContinentsOut);
 
 printTable(
     './out/languages.sql', 
@@ -64,31 +91,27 @@ printTable(
     \%languages
 );
 
-
 printTable(
     './out/currencies.sql', 
     "INSERT INTO currencies (id, name)\nVALUES\n", 
     \%currencies
 );
 
+printTable(
+    './out/continents.sql',
+    "INSERT INTO continents (id, name)\nVALUES\n", 
+    \%continents
+);
 
-close($countryCurrenciesOut);
-close($countryLanguagesOut);
-close($countriesOut);
-close($list);
-
-sub printHash {
+sub printJoinTable {
     my ($hash, $fh, $start, $in, $out, $getVal) = @_;
     if(ref $hash eq ref {}) {
         my @keys = sort keys(%$hash);
-
         foreach $key (@keys) {
             $$out{$key} = &$getVal($key, $hash);
-
             if($start > 0) {
                 print $fh ",\n";
             }
-            print "key:$key in:$in\n";
             print $fh "('$key', '$in')"
         }
     }
@@ -99,9 +122,7 @@ sub printTable {
     my ($filename, $insert, $hash) = @_;
     my @keys = sort keys(%$hash);
     my $start = 0;
-
-    open($fh, '>', $filename);
-    print $fh $insert;
+    my $fh = printOpen($filename, $insert);
     for $key (@keys) {
         my $name = quote($hash->{$key});
         if($start > 0) {
@@ -110,6 +131,18 @@ sub printTable {
         $start = 1;
         print $fh "('$key', '$name')";
     }
+    printClose($fh);
+}
+
+sub printOpen {
+    my ($filename, $header) = @_;
+    my $fh = new FileHandle(">$filename");
+    print $fh $header;
+    return $fh;
+}
+
+sub printClose {
+    my ($fh) = @_;
     print $fh ";\n";
     close($fh);
 }
