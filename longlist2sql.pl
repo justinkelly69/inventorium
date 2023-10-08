@@ -1,76 +1,118 @@
 #!/usr/bin/env perl
 
-open($list, '<', './longlist.json');
-open($countriesOut, '>', './out/countries.sql');
-open($languagesOut, '>', './out/languages.sql');
-open($countryLanguagesOut, '>', './out/countrylanguages.sql');
-
-print $countriesOut "INSERT INTO countries (id, common, official, flag)\n";
-print $countryLanguagesOut "INSERT INTO country_languages (country, language)\n";
-print $languagesOut "INSERT INTO languages (id, name)\n";
-
 use JSON;
 use Data::Dumper;
+
+open($list, '<', './longlist.json');
 
 my $i = 0;
 my @item  = <$list>;
 
 my $json = JSON->new->allow_nonref;
 my %longlist = %{$json->decode(join("", "@item"))};
+my @keys = keys(%longlist);
+
 my %languages;
 my %currencies;
 
-my $countriesStart = 0;
-my $countryLanguagesStart = 0;
-my $languagesStart = 0;
+open($countriesOut,         '>', './out/countries.sql');
+open($countryLanguagesOut,  '>', './out/countrylanguages.sql');
+open($countryCurrenciesOut, '>', './out/countrycurrencies.sql');
 
-my @keys = keys(%longlist);
+print $countriesOut         "INSERT INTO countries (id, common, official, flag)\nVALUES\n";
+print $countryLanguagesOut  "INSERT INTO country_languages (country, language)\nVALUES\n";
+print $countryCurrenciesOut "INSERT INTO country_currencies (id, name)\nVALUES\n";
+
+my $start = 0;
 for $key (sort @keys) {
-    my $commonName = quote($longlist{$key}->{name}->{common});
+    my $commonName   = quote($longlist{$key}->{name}->{common});
     my $officialName = quote($longlist{$key}->{name}->{official});
-    my $flag = $longlist{$key}->{extra}->{emoji};
+    my $flag         = $longlist{$key}->{extra}->{emoji};
 
-    my $langs = $longlist{$key}->{languages};
+    %languages = printHash (
+        $longlist{$key}->{languages}, 
+        $countryLanguagesOut,
+        $start,
+        $key,
+        \%languages,
+        sub {my ($key, $hash) = @_; $$hash{$key};}
+    );
 
-    if(ref $langs eq ref {}) {
-        my @keys = keys(%$langs);
-        my %langs = %$langs;
-        foreach(@keys) {
-            $languages{$_} = $langs{$_};
-            if($countryLanguagesStart > 0){
-                print $countryLanguagesOut ",\n";
-            }
-            $countryLanguagesStart = 1;
-            print $countryLanguagesOut "('$key', '$_')";
-        }
-    }
+    %currencies = printHash (
+        $longlist{$key}->{currency},
+        $countryCurrenciesOut,
+        $start,
+        $key,
+        \%currencies,
+        sub {my ($key, $hash) = @_; $$hash{$key}->{iso_4217_name};}
+    );
 
-    if($countriesStart > 0){
+    if($start > 0){
         print $countriesOut ",\n";
     }
-    $countriesStart = 1;
+    $start = 1;
     print $countriesOut "('$key', '$commonName', '$officialName', '$flag')";
 }
 print $countriesOut ";\n";
 print $countryLanguagesOut ";\n";
-
-my @langKeys = keys(%languages);
-for(sort @langKeys) {
-    my $language = quote($languages{$_});
-    if($languagesStart > 0){
-        print $languagesOut ",\n";
-    }
-    $languagesStart = 1;
-    print $languagesOut "('$_', '$language')";
-}
-print $languagesOut ";\n";
+print $countryCurrenciesOut ";\n";
 
 
+printTable(
+    './out/languages.sql', 
+    "INSERT INTO languages (id, name)\nVALUES\n", 
+    \%languages
+);
 
+
+printTable(
+    './out/currencies.sql', 
+    "INSERT INTO currencies (id, name)\nVALUES\n", 
+    \%currencies
+);
+
+
+close($countryCurrenciesOut);
 close($countryLanguagesOut);
 close($countriesOut);
-close($languagesOut);
 close($list);
+
+sub printHash {
+    my ($hash, $fh, $start, $in, $out, $getVal) = @_;
+    if(ref $hash eq ref {}) {
+        my @keys = sort keys(%$hash);
+
+        foreach $key (@keys) {
+            $$out{$key} = &$getVal($key, $hash);
+
+            if($start > 0) {
+                print $fh ",\n";
+            }
+            print "key:$key in:$in\n";
+            print $fh "('$key', '$in')"
+        }
+    }
+    return %$out;
+}
+
+sub printTable {
+    my ($filename, $insert, $hash) = @_;
+    my @keys = sort keys(%$hash);
+    my $start = 0;
+
+    open($fh, '>', $filename);
+    print $fh $insert;
+    for $key (@keys) {
+        my $name = quote($hash->{$key});
+        if($start > 0) {
+            print $fh ",\n";
+        }
+        $start = 1;
+        print $fh "('$key', '$name')";
+    }
+    print $fh ";\n";
+    close($fh);
+}
 
 sub quote {
     my ($string) = @_;

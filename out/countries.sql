@@ -1,4 +1,5 @@
 INSERT INTO countries (id, common, official, flag)
+VALUES
 ('ad', 'Andorra', 'Principality of Andorra', '🇦🇩'),
 ('ae', 'United Arab Emirates', 'United Arab Emirates', '🇦🇪'),
 ('af', 'Afghanistan', 'Islamic Republic of Afghanistan', '🇦🇫'),

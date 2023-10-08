@@ -1,4 +1,5 @@
 INSERT INTO languages (id, name)
+VALUES
 ('afr', 'Afrikaans'),
 ('amh', 'Amharic'),
 ('ara', 'Arabic'),
