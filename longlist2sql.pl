@@ -14,25 +14,41 @@ my $json = JSON->new->allow_nonref;
 my %longlist = %{$json->decode(join("", "@item"))};
 my @keys = keys(%longlist);
 
-my $countriesOut = printOpen (
-    './out/countries.sql',
-    "INSERT INTO countries (id, common, official, flag, tld, callingCode, euMember)\nVALUES\n"
-);
+my $inserts = {
+    'countries' => {
+        file => './out/countries.sql',
+        sql  => "INSERT INTO countries (id, common, official, flag, tld, callingCode, euMember)\nVALUES\n"
+    },
+    'country_languages' => {
+        file => './out/country-languages.sql',
+        sql  => "INSERT INTO country_languages (country, language)\nVALUES\n"
+    },
+    'country_currencies' => {
+        file => './out/country-currencies.sql',
+        sql  =>  "INSERT INTO country_currencies (id, name)\nVALUES\n"
+    },
+    'country_continents' => {
+        file => './out/country-continents.sql',
+        sql  => "INSERT INTO country_continents (id, name)\nVALUES\n"
+    },
+    'languages' => {
+        file => './out/languages.sql', 
+        sql  => "INSERT INTO languages (id, name)\nVALUES\n", 
+    },
+    'currencies' => {
+        file => './out/currencies.sql',
+        sql  => "INSERT INTO currencies (id, name)\nVALUES\n", 
+    },
+    'continents' => {
+        file => './out/continents.sql',
+        sql  =>"INSERT INTO continents (id, name)\nVALUES\n", 
+    },
+};
 
-my $countryLanguagesOut = printOpen (
-    './out/countrylanguages.sql',
-    "INSERT INTO country_languages (country, language)\nVALUES\n"
-);
-
-my $countryCurrenciesOut = printOpen (
-    './out/countrycurrencies.sql',
-    "INSERT INTO country_currencies (id, name)\nVALUES\n"
-);
-
-my $countryContinentsOut = printOpen (
-    './out/countrycontinents.sql',
-    "INSERT INTO country_continents (id, name)\nVALUES\n"
-);
+my $countriesOut          = printOpen($inserts->{'countries'});
+my $countryLanguagesOut   = printOpen($inserts->{'country_languages'});
+my $countryCurrenciesOut  = printOpen($inserts->{'country_currencies'});
+my $countryContinentsOut  = printOpen($inserts->{'country_continents'});
 
 my %languages;
 my %currencies;
@@ -44,26 +60,15 @@ for $key (sort @keys) {
     my $officialName = quote($longlist{$key}->{name}->{official});
     my $flag         = $longlist{$key}->{extra}->{emoji};
     my $tld          = $longlist{$key}->{tld};
-    my $tldStr       = '';
     my $callingCode  = $longlist{$key}->{dialling}->{calling_code};
+   
+    my $euMember     = 'false';
+    my $tldStr       = '';
     my $callStr      = '';
-    my $euMember     = $longlist{$key}->{extra}->{eu_member};
 
-    if($euMember) {
-        $euMember = 'true';
-    }
-    else {
-        $euMember = 'false';
-    }
-
-    if(ref $tld eq ref []) {
-        #$tldStr = join(",", @$tld);
-        $tldStr = substr $$tld[0], 1;
-    }
-
-    if(ref $callingCode eq ref []) {
-        $callStr = join(',', @$callingCode);
-    }
+    $euMember        = 'true' if($longlist{$key}->{extra}->{eu_member});
+    $tldStr          = substr $$tld[0], 1 if(ref $tld eq ref []);
+    $callStr         = join(',', @$callingCode) if(ref $callingCode eq ref []);
     
     %languages = printJoinTable (
         $longlist{$key}->{languages}, 
@@ -104,23 +109,9 @@ printClose($countryLanguagesOut);
 printClose($countryCurrenciesOut);
 printClose($countryContinentsOut);
 
-printTable(
-    './out/languages.sql', 
-    "INSERT INTO languages (id, name)\nVALUES\n", 
-    \%languages
-);
-
-printTable(
-    './out/currencies.sql', 
-    "INSERT INTO currencies (id, name)\nVALUES\n", 
-    \%currencies
-);
-
-printTable(
-    './out/continents.sql',
-    "INSERT INTO continents (id, name)\nVALUES\n", 
-    \%continents
-);
+printTable($inserts->{'languages'} , \%languages);
+printTable($inserts->{'currencies'}, \%currencies);
+printTable($inserts->{'continents'}, \%continents);
 
 sub printJoinTable {
     my ($hash, $fh, $start, $in, $out, $getVal) = @_;
@@ -138,10 +129,10 @@ sub printJoinTable {
 }
 
 sub printTable {
-    my ($filename, $insert, $hash) = @_;
+    my ($args, $hash) = @_;
     my @keys = sort keys(%$hash);
     my $start = 0;
-    my $fh = printOpen($filename, $insert);
+    my $fh = printOpen($args);
     for $key (@keys) {
         my $name = quote($hash->{$key});
         if($start > 0) {
@@ -154,9 +145,9 @@ sub printTable {
 }
 
 sub printOpen {
-    my ($filename, $header) = @_;
-    my $fh = new FileHandle(">$filename");
-    print $fh $header;
+    my ($args) = @_;
+    my $fh = new FileHandle(">$args->{file}");
+    print $fh "$args->{sql}";
     return $fh;
 }
 
