@@ -61,6 +61,7 @@ for $key (sort @keys) {
     my $flag         = $longlist{$key}->{extra}->{emoji};
     my $tld          = $longlist{$key}->{tld};
     my $callingCode  = $longlist{$key}->{dialling}->{calling_code};
+    my $continent    = $longlist{$key}->{geo}->{continent};
    
     my $euMember     = 'false';
     my $tldStr       = '';
@@ -101,7 +102,7 @@ for $key (sort @keys) {
         print $countriesOut ",\n";
     }
     $start = 1;
-    print $countriesOut "('$key', '$commonName', '$officialName', '$flag', '$tldStr', '$callStr', $euMember)";
+    print $countriesOut "('$key', '$commonName', '$officialName', '$continent', '$flag', '$tldStr', '$callStr', $euMember)";
 }
 
 printClose($countriesOut);
