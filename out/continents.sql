@@ -1,4 +1,4 @@
-INSERT INTO continents (id, name)
+INSERT INTO continents (ct_id, ct_name)
 VALUES
 ('AF', 'Africa'),
 ('AN', 'Antarctica'),

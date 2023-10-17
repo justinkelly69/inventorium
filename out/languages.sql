@@ -1,4 +1,4 @@
-INSERT INTO languages (id, name)
+INSERT INTO languages (lg_id, lg_name)
 VALUES
 ('afr', 'Afrikaans'),
 ('amh', 'Amharic'),

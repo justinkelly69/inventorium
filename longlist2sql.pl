@@ -17,38 +17,33 @@ my @keys = keys(%longlist);
 my $inserts = {
     'countries' => {
         file => './out/countries.sql',
-        sql  => "INSERT INTO countries (id, common, official, flag, tld, callingCode, euMember)\nVALUES\n"
+        sql  => "INSERT INTO countries (co_id, co_continent_id, co_common_name, co_official_name, co_flag, co_tld, co_calling_codes, co_eu_member, co_enabled)\nVALUES\n"
     },
     'country_languages' => {
         file => './out/country-languages.sql',
-        sql  => "INSERT INTO country_languages (country, language)\nVALUES\n"
+        sql  => "INSERT INTO country_languages (cl_country_id, cl_language_id)\nVALUES\n"
     },
     'country_currencies' => {
         file => './out/country-currencies.sql',
-        sql  =>  "INSERT INTO country_currencies (id, name)\nVALUES\n"
-    },
-    'country_continents' => {
-        file => './out/country-continents.sql',
-        sql  => "INSERT INTO country_continents (id, name)\nVALUES\n"
+        sql  =>  "INSERT INTO country_currencies (cc_country_id, cc_currency_id)\nVALUES\n"
     },
     'languages' => {
         file => './out/languages.sql', 
-        sql  => "INSERT INTO languages (id, name)\nVALUES\n", 
+        sql  => "INSERT INTO languages (lg_id, lg_name)\nVALUES\n", 
     },
     'currencies' => {
         file => './out/currencies.sql',
-        sql  => "INSERT INTO currencies (id, name)\nVALUES\n", 
+        sql  => "INSERT INTO currencies (ct_id, ct_name)\nVALUES\n", 
     },
     'continents' => {
         file => './out/continents.sql',
-        sql  =>"INSERT INTO continents (id, name)\nVALUES\n", 
+        sql  =>"INSERT INTO continents (ct_id, ct_name)\nVALUES\n", 
     },
 };
 
 my $countriesOut          = printOpen($inserts->{'countries'});
 my $countryLanguagesOut   = printOpen($inserts->{'country_languages'});
 my $countryCurrenciesOut  = printOpen($inserts->{'country_currencies'});
-my $countryContinentsOut  = printOpen($inserts->{'country_continents'});
 
 my %languages;
 my %currencies;
@@ -62,6 +57,9 @@ for $key (sort @keys) {
     my $tld          = $longlist{$key}->{tld};
     my $callingCode  = $longlist{$key}->{dialling}->{calling_code};
     my $continent    = $longlist{$key}->{geo}->{continent};
+
+    my @keysContinent = keys(%$continent);
+    my $nameContinent = $keysContinent[0];
    
     my $euMember     = 'false';
     my $tldStr       = '';
@@ -90,8 +88,8 @@ for $key (sort @keys) {
     );
 
     %continents = printJoinTable (
-        $longlist{$key}->{geo}->{continent}, 
-        $countryContinentsOut,
+        $continent, 
+        0,
         $start,
         $key,
         \%continents,
@@ -102,13 +100,12 @@ for $key (sort @keys) {
         print $countriesOut ",\n";
     }
     $start = 1;
-    print $countriesOut "('$key', '$commonName', '$officialName', '$continent', '$flag', '$tldStr', '$callStr', $euMember)";
+    print $countriesOut "('$key', '$nameContinent', '$commonName', '$officialName', '$flag', '$tldStr', '$callStr', $euMember)";
 }
 
 printClose($countriesOut);
 printClose($countryLanguagesOut);
 printClose($countryCurrenciesOut);
-printClose($countryContinentsOut);
 
 printTable($inserts->{'languages'} , \%languages);
 printTable($inserts->{'currencies'}, \%currencies);
@@ -120,10 +117,12 @@ sub printJoinTable {
         my @keys = sort keys(%$hash);
         foreach $key (@keys) {
             $$out{$key} = &$getVal($key, $hash);
-            if($start > 0) {
-                print $fh ",\n";
+            if($fh) {
+                if($start > 0) {
+                    print $fh ",\n";
+                }
+                print $fh "('$in', '$key')"  
             }
-            print $fh "('$key', '$in')"
         }
     }
     return %$out;

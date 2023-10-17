@@ -1,4 +1,4 @@
-INSERT INTO currencies (id, name)
+INSERT INTO currencies (ct_id, ct_name)
 VALUES
 ('AED', 'UAE Dirham'),
 ('AFN', 'Afghani'),
