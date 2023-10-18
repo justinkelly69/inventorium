@@ -5,17 +5,16 @@ use FileHandle;
 use Data::Dumper;
 
 unlink glob "out/*.*";
-
 open($list, '<', './longlist.json');
 my @item  = <$list>;
 close($list);
 
-my $json = JSON->new->allow_nonref;
+my $json     = JSON->new->allow_nonref;
 my %longlist = %{$json->decode(join("", "@item"))};
-my @keys = keys(%longlist);
+my @keys     = keys(%longlist);
 
 my $inserts = {
-    'countries'           => "INSERT INTO countries (co_id, co_continent_id, co_common_name, co_official_name, co_flag, co_tld, co_calling_codes, co_eu_member, co_enabled)\nVALUES\n",
+    'countries'           => "INSERT INTO countries (co_id, co_continent_id, co_common_name, co_official_name, co_flag, co_tld, co_calling_codes, co_eu_member)\nVALUES\n",
     'country_languages'   => "INSERT INTO country_languages (cl_country_id, cl_language_id)\nVALUES\n",
     'country_currencies'  => "INSERT INTO country_currencies (cc_country_id, cc_currency_id)\nVALUES\n",
     'languages'           => "INSERT INTO languages (lg_id, lg_name)\nVALUES\n",
@@ -24,11 +23,11 @@ my $inserts = {
 };
 
 my %languages;
-my $languagesText = $inserts->{'languages'};
+my $languagesText         = $inserts->{languages};
 my %currencies;
-my $currenciesText = $inserts->{'currencies'};
+my $currenciesText        = $inserts->{currencies};
 my %continents;
-my $continentsText = $inserts->{'continents'};
+my $continentsText        = $inserts->{continents};
 my $countriesText         = $inserts->{countries};
 my $countryLanguagesText  = $inserts->{country_languages};
 my $languagesRef;
@@ -45,6 +44,8 @@ for $key (sort @keys) {
     my $tld          = $longlist{$key}->{tld};
     my $callingCode  = $longlist{$key}->{dialling}->{calling_code};
     my $continent    = $longlist{$key}->{geo}->{continent};
+    my $languages    = $longlist{$key}->{languages};
+    my $currency     = $longlist{$key}->{currency};
 
     my @keysContinent = keys(%$continent);
     my $nameContinent = $keysContinent[0];
@@ -59,7 +60,7 @@ for $key (sort @keys) {
     
 
     ($languagesRef, $countryLanguagesText) = printJoinTableText (
-        $longlist{$key}->{languages}, 
+        $languages, 
         $countryLanguagesText,
         $start,
         $key,
@@ -69,7 +70,7 @@ for $key (sort @keys) {
     %languages = %$languagesRef;
 
     ($currenciesRef, $countryCurrenciesText) = printJoinTableText (
-        $longlist{$key}->{currency},
+        $currency,
         $countryCurrenciesText,
         $start,
         $key,

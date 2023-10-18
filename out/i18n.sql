@@ -8,7 +8,7 @@ VALUES
 ('OC', 'Oceania'),
 ('SA', 'South America');
 
-INSERT INTO countries (co_id, co_continent_id, co_common_name, co_official_name, co_flag, co_tld, co_calling_codes, co_eu_member, co_enabled)
+INSERT INTO countries (co_id, co_continent_id, co_common_name, co_official_name, co_flag, co_tld, co_calling_codes, co_eu_member)
 VALUES
 ('ad', 'EU', 'Andorra', 'Principality of Andorra', '🇦🇩', 'ad', '376', false),
 ('ae', 'AS', 'United Arab Emirates', 'United Arab Emirates', '🇦🇪', 'ae', '971', false),
