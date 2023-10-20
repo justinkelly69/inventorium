@@ -9,10 +9,10 @@ DROP TABLE IF EXISTS roles;
 -- roles
 CREATE TABLE roles (
     ro_id SERIAL PRIMARY KEY,
-    ro_ordering INTEGER NOT NULL DEFAULT 0,
     ro_created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ro_name VARCHAR(20) NOT NULL UNIQUE,
-    ro_description VARCHAR(60) NOT NULL
+    ro_description VARCHAR(60) NOT NULL,
+    ro_system BOOLEAN
 );
 -- users
 CREATE TYPE USER_STATUS AS ENUM ('enabled', 'disabled');
