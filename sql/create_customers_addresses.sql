@@ -23,7 +23,7 @@ CREATE TYPE ADDRESS_TYPE AS ENUM ('billing', 'shipping', 'billing_shipping');
 CREATE TABLE addresses (
     ad_id SERIAL PRIMARY KEY,
     ad_cu_id INTEGER NOT NULL,
-    ad_co_id INTEGER NOT NULL,
+    ad_co_id CHAR(2) NOT NULL,
     ad_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ad_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ad_current BOOLEAN NOT NULL DEFAULT FALSE,
